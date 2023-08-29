@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'http_handler.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +23,7 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController fileNameController = TextEditingController();
   String lastSourceUrl = '';
   String lastFileName = '';
+  final HttpHandler handler = HttpHandler();
 
   void _updateProgress(double val) {
     setState(() {
@@ -49,7 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // by the _incrementCounter method above.
 
     DownloadHistories histories = Provider.of<DownloadHistories>(context);
-    final HttpHandler handler = HttpHandler();
+
 
     return Scaffold(
       appBar: AppBar(

@@ -38,7 +38,7 @@ class HttpHandler{
   // HttpHandler(this.histories);
 
 
-  Future<DownloadHistory> downloadFile(DownloadHistory history,
+  Future<bool> downloadFile(DownloadHistory history,
       void Function(double val) updateFunc, void Function() finishFunc) async {
     // get the information of totalBytes
     if (totalBytes == 0){
@@ -68,8 +68,6 @@ class HttpHandler{
       // handshake, build connection
       if (message is SendPort){
         _toDownloadPort = message;
-        print("set up _toDownloadPort: ${_toDownloadPort.hashCode}");
-        print("current isolate(setup): ${Isolate.current.hashCode}");
       } else if (message is String){
         if (message == 'completed') {
           completeDownload(history.fileName);
@@ -87,7 +85,11 @@ class HttpHandler{
       }
     });
 
-    return history;
+    if (history.status == DownloadStatus.completed){
+      return true;
+    }else{
+      return false;
+    }
   }
 
 
@@ -112,7 +114,6 @@ class HttpHandler{
     toDownloadPort.listen((message){
       if (message == 'pause'){
         args.sendPort.send('pause:$accomplishedBytes');
-        print("closing toDownloadPort: ${toDownloadPort.sendPort.hashCode}");
         toDownloadPort.close();
         Isolate.current.kill(priority: Isolate.immediate);
       }
@@ -127,7 +128,6 @@ class HttpHandler{
     }, onDone: () {
       // send complete message to main iso, close resource
       toDownloadPort.close();
-      print("closing toDownloadPort: ${toDownloadPort.sendPort.hashCode}");
       args.sendPort.send('completed');
       Isolate.current.kill(priority: Isolate.immediate);
     });
@@ -140,7 +140,10 @@ class HttpHandler{
     String fileType = fileName.substring(fileName.lastIndexOf('.'));
     DownloadHistory history = DownloadHistory(fileType, fileName, sourceUrl, DownloadStatus.downloading);
     histories.addHistory(history);
-    histories.changeStatus(await downloadFile(history, updateFunc, finishFunc));
+    // downloadFile(history, updateFunc, finishFunc);
+    if(await downloadFile(history, updateFunc, finishFunc)){
+      histories.changeStatusWithName(history.fileName, DownloadStatus.completed);
+    }
   }
 
   void pauseDownload(DownloadHistories histories, String fileName) {
@@ -154,7 +157,7 @@ class HttpHandler{
 
     if (_toDownloadPort == null){
       print("_toDownloadPort is null");
-      print("current isolate(pauseDownload): ${Isolate.current.hashCode}");
+      print("current instance(pauseDownload): ${hashCode}");
     }
 
     if (_toDownloadPort != null) {
@@ -171,7 +174,9 @@ class HttpHandler{
     }
     history.status = DownloadStatus.downloading;
     histories.changeStatus(history);
-    histories.changeStatus(await downloadFile(history, updateFunc, finishFunc));
+    if(await downloadFile(history, updateFunc, finishFunc)){
+      histories.changeStatusWithName(history.fileName, DownloadStatus.completed);
+    }
   }
 
   void cancelDownload(DownloadHistories histories, String fileName) async{
