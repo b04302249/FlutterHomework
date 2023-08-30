@@ -33,7 +33,6 @@ class HttpHandler{
   final TEST_URL = 'https://research.nhm.org/pdfs/10840/10840.pdf';
   // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
   // final TEST_URL = 'https://drive.google.com/uc?id=1uQY0Mey2N8Xa_lCI6YFAb1_nFfrcsKpZ&export=download' ;
-  Isolate? _downloadIsolate;
   SendPort? _toDownloadPort;
 
   // HttpHandler(this.histories);
@@ -57,12 +56,11 @@ class HttpHandler{
 
 
     // create isolate and port
-    final toMainPort = ReceivePort();
+    final toMainPort = ReceivePort("toMainPort");
     final destDir = await getApplicationDocumentsDirectory();
-    _downloadIsolate = await Isolate.spawn(downloadRangeFile,
-        DownloadArgs(
-            toMainPort.sendPort, history.sourceUrl, destDir.path, history.fileName, downloadedBytes,
-            totalBytes));
+    Isolate.spawn(downloadRangeFile, DownloadArgs(
+        toMainPort.sendPort, history.sourceUrl, destDir.path, history.fileName, downloadedBytes,
+        totalBytes));
 
     // deal with communication between download iso and main iso
     toMainPort.listen( (message) {
@@ -71,7 +69,8 @@ class HttpHandler{
         _toDownloadPort = message;
       } else if (message is String){
         if (message == 'completed') {
-          completeDownload(history.fileName);
+          downloadedBytes = 0;
+          totalBytes = 0;
           history.status = DownloadStatus.completed;
           finishFunc();
           toMainPort.close();
@@ -79,6 +78,8 @@ class HttpHandler{
         } else if (message.substring(0, 5) == 'pause'){
           // remember the progress current download, start from current progress next time
           downloadedBytes = int.parse(message.substring(6));
+          _toDownloadPort = null;
+          toMainPort.close();
           print("pause request from download iso, downloadedBytes: $downloadedBytes");
         }
       } else if (message is double){
@@ -113,44 +114,29 @@ class HttpHandler{
     // listen message from main to download, pause if necessary
     RandomAccessFile file = await openFile(args.startBytes, args.destPath, args.fileName);
     toDownloadPort.listen((message){
-      if (message == 'pause'){
+      if (message == 'pause') {
         args.sendPort.send('pause:$accomplishedBytes');
-        file.close();
-        toDownloadPort.close();
-        Isolate.current.kill(priority: Isolate.immediate);
+        cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
+      }else if (message == 'cancel'){
+        print("receive message cancel...");
+        cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
+        deleteFile(args.destPath, args.fileName);
       }
     });
-    int test_val = 0;
-    int count = 0;
-    Mutex m = Mutex();
-    // accept chunks from response, don't have to close file, file will close once it finish
+
+
     response.stream.listen((List<int> chunk) async {
-      // await file.writeAsBytes(chunk, mode: FileMode.append, flush: true);
-      //file.writeAsBytesSync(chunk, mode: FileMode.append);
-      // await m.protect(() async {
-      //   // critical section
-      //   await file.writeFrom(chunk, 0, chunk.length);
-      //   test_val = await test_funct(test_val);
-      // });
-      count += 1;
+      // await file.writeFrom(chunk, 0, chunk.length);
       file.writeFromSync(chunk, 0, chunk.length);
       accomplishedBytes += chunk.length;
       args.sendPort.send(accomplishedBytes/args.endBytes);
-    }, onDone: () {
+    }, onDone: () async {
       // send complete message to main iso, close resource
-      file.close();
-      print("count: $count, test_val: $test_val");
-      toDownloadPort.close();
       args.sendPort.send('completed');
-      Isolate.current.kill(priority: Isolate.immediate);
+      cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
     });
   }
 
-  Future<int> test_funct(int val) async {
-    val += 1;
-    Future.delayed(Duration(seconds: 1));
-    return val;
-  }
 
   void newDownload(DownloadHistories histories, String fileName, String sourceUrl,
       void Function(double val) updateFunc, void Function() finishFunc) async {
@@ -171,17 +157,12 @@ class HttpHandler{
       print("FileName: $fileName does not have any record, please press Start to create a new download!");
       return;
     }
-    history.status = DownloadStatus.pause;
-    histories.changeStatus(history);
-
-    if (_toDownloadPort == null){
-      print("_toDownloadPort is null");
-      print("current instance(pauseDownload): ${hashCode}");
-    }
 
     if (_toDownloadPort != null) {
       _toDownloadPort!.send('pause');
     }
+    history.status = DownloadStatus.pause;
+    histories.changeStatus(history);
   }
 
   void resumeDownload(DownloadHistories histories, String fileName, String sourceUrl,
@@ -198,28 +179,42 @@ class HttpHandler{
     }
   }
 
-  void cancelDownload(DownloadHistories histories, String fileName) async{
+  /// ************************
+  /// if the download isolate is still running, directly killing it will cause memory leak
+  /// we need to pause download which will clean up the memory of download isolate
+  ///***************************
+  void cancelDownload(DownloadHistories histories, String fileName) async {
     DownloadHistory? history = histories.getByName(fileName);
     if (history == null){
       print("FileName: $fileName does not have any record, please press Start to create a new download!");
       return;
     }
+    if (_toDownloadPort != null){
+      // download iso executing, ask download iso to clean up
+      _toDownloadPort!.send('cancel');
+    }else{
+      // no download iso executing, directly delete the file
+      final destDir = await getApplicationDocumentsDirectory();
+      deleteFile(destDir.path, fileName);
+    }
     history.status = DownloadStatus.cancel;
     histories.changeStatus(history);
-    final destDir = await getApplicationDocumentsDirectory();
-    File f = File('${destDir.path}/$fileName');
-    deleteFile(f);
     downloadedBytes = 0;
     totalBytes = 0;
   }
 
-  void completeDownload(String fileName) {
-    // do some finish process
-    downloadedBytes = 0;
-    totalBytes = 0;
-    // histories.changeStatusWithName(fileName, DownloadStatus.completed);
-    _downloadIsolate?.kill(priority: Isolate.immediate);
+  void cleanUp({Isolate? iso, ReceivePort? receivePort, RandomAccessFile? randomAccessFile}){
+    if (randomAccessFile != null){
+      randomAccessFile.close();
+    }
+    if (receivePort != null){
+      receivePort.close();
+    }
+    if (iso != null){
+      iso.kill(priority: Isolate.immediate);
+    }
   }
+
 
   Future<RandomAccessFile> openFile(int startPos, String path, String fileName) async {
     File f = File('$path/$fileName');
@@ -228,15 +223,21 @@ class HttpHandler{
     }
 
     // open a brand new file
-    deleteFile(f);
+    deleteFile(path, fileName, file: f);
     await f.create();
     return f.open(mode: FileMode.write);
     // return f;
   }
 
-  void deleteFile(File f) async {
-    if (await f.exists()){
-      await f.delete();
+  void deleteFile(String path, String fileName, {File? file}) async {
+    if (file != null && await file.exists()) {
+      await file.delete();
+      return;
+    } else {
+      File f = File('$path/$fileName');
+      if (await f.exists()) {
+        await f.delete();
+      }
     }
   }
 }

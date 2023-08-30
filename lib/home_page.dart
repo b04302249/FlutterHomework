@@ -35,9 +35,9 @@ class _MyHomePageState extends State<MyHomePage> {
   void _updateCurrentProcess(){
     setState(() {
       // lastSourceUrl = urlController.text;
-      lastSourceUrl = TEST_URL;
       // lastFileName = fileNameController.text;
-      lastFileName = "sample1.pdf";
+      lastSourceUrl = TEST_URL;
+      lastFileName = "sample.pdf";
     });
   }
 
