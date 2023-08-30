@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:async';
+import 'package:mutex/mutex.dart';
 
 import 'download_history.dart';
 
@@ -110,27 +111,45 @@ class HttpHandler{
 
 
     // listen message from main to download, pause if necessary
-    File file = await openFile(args.startBytes, args.destPath, args.fileName);
+    RandomAccessFile file = await openFile(args.startBytes, args.destPath, args.fileName);
     toDownloadPort.listen((message){
       if (message == 'pause'){
         args.sendPort.send('pause:$accomplishedBytes');
+        file.close();
         toDownloadPort.close();
         Isolate.current.kill(priority: Isolate.immediate);
       }
     });
-
+    int test_val = 0;
+    int count = 0;
+    Mutex m = Mutex();
     // accept chunks from response, don't have to close file, file will close once it finish
-    response.stream.listen((List<int> chunk) {
+    response.stream.listen((List<int> chunk) async {
       // await file.writeAsBytes(chunk, mode: FileMode.append, flush: true);
-      file.writeAsBytesSync(chunk, mode: FileMode.append);
+      //file.writeAsBytesSync(chunk, mode: FileMode.append);
+      // await m.protect(() async {
+      //   // critical section
+      //   await file.writeFrom(chunk, 0, chunk.length);
+      //   test_val = await test_funct(test_val);
+      // });
+      count += 1;
+      file.writeFromSync(chunk, 0, chunk.length);
       accomplishedBytes += chunk.length;
       args.sendPort.send(accomplishedBytes/args.endBytes);
     }, onDone: () {
       // send complete message to main iso, close resource
+      file.close();
+      print("count: $count, test_val: $test_val");
       toDownloadPort.close();
       args.sendPort.send('completed');
       Isolate.current.kill(priority: Isolate.immediate);
     });
+  }
+
+  Future<int> test_funct(int val) async {
+    val += 1;
+    Future.delayed(Duration(seconds: 1));
+    return val;
   }
 
   void newDownload(DownloadHistories histories, String fileName, String sourceUrl,
@@ -202,16 +221,17 @@ class HttpHandler{
     _downloadIsolate?.kill(priority: Isolate.immediate);
   }
 
-  Future<File> openFile(int startPos, String path, String fileName) async {
+  Future<RandomAccessFile> openFile(int startPos, String path, String fileName) async {
+    File f = File('$path/$fileName');
     if (startPos != 0) {
-      return File('$path/$fileName');
+      return f.open(mode: FileMode.append);
     }
 
     // open a brand new file
-    File f = File('$path/$fileName');
     deleteFile(f);
     await f.create();
-    return f;
+    return f.open(mode: FileMode.write);
+    // return f;
   }
 
   void deleteFile(File f) async {
