@@ -31,7 +31,24 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    DownloadHistories histories = Provider.of<DownloadHistories>(context, listen: false);
+    CurrentDownloadTarget target = Provider.of<CurrentDownloadTarget>(context, listen: false);
+    if (state == AppLifecycleState.paused) {
+      handler.pauseDownload(histories, target.getFileName());
+      print("Sensor screen is close!!");
+    }
+  }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance?.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance?.removeObserver(this);
+    super.dispose();
   }
 
   void _updateProgress(double val) {
