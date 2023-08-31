@@ -24,7 +24,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String lastSourceUrl = '';
   String lastFileName = '';
   final HttpHandler handler = HttpHandler();
-  final TEST_URL = 'https://research.nhm.org/pdfs/10840/10840.pdf';
+  final TEST_URL1 = 'https://research.nhm.org/pdfs/10840/10840.pdf';
+  final TEST_URL2 = "https://miro.medium.com/v2/resize:fit:720/format:webp/1*XEgA1TTwXa5AvAdw40GFow.png";
 
   void _updateProgress(double val) {
     setState(() {
@@ -34,10 +35,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _updateCurrentProcess(){
     setState(() {
-      // lastSourceUrl = urlController.text;
-      // lastFileName = fileNameController.text;
-      lastSourceUrl = TEST_URL;
-      lastFileName = "sample.pdf";
+      lastSourceUrl = urlController.text;
+      lastFileName = fileNameController.text;
+      // lastSourceUrl = TEST_URL2;
+      // lastFileName = "sample.pdf";
+      // lastFileName = "sample.png";
     });
   }
 

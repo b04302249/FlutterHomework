@@ -14,10 +14,12 @@ enum DownloadStatus{
 class DownloadHistory {
   String fileType;
   String fileName;
+  // not include file name
+  String fileDir;
   String sourceUrl;
   DownloadStatus status;
 
-  DownloadHistory(this.fileType, this.fileName, this.sourceUrl, this.status);
+  DownloadHistory(this.fileType, this.fileName, this.fileDir, this.sourceUrl, this.status);
 }
 
 class DownloadHistories extends ChangeNotifier {

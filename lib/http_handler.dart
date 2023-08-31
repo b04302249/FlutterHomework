@@ -1,12 +1,10 @@
 
-import 'package:flutter/cupertino.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:async';
-import 'package:mutex/mutex.dart';
 
 import 'download_history.dart';
 
@@ -14,12 +12,12 @@ import 'download_history.dart';
 class DownloadArgs {
   final SendPort sendPort;
   final String downloadUrl;
-  final String destPath;
+  final String destDir;
   final String fileName;
   final int startBytes;
   final int endBytes;
 
-  DownloadArgs(this.sendPort, this.downloadUrl, this.destPath, this.fileName, this.startBytes,
+  DownloadArgs(this.sendPort, this.downloadUrl, this.destDir, this.fileName, this.startBytes,
       this.endBytes);
 }
 
@@ -57,10 +55,14 @@ class HttpHandler{
 
     // create isolate and port
     final toMainPort = ReceivePort("toMainPort");
-    final destDir = await getApplicationDocumentsDirectory();
     Isolate.spawn(downloadRangeFile, DownloadArgs(
-        toMainPort.sendPort, history.sourceUrl, destDir.path, history.fileName, downloadedBytes,
-        totalBytes));
+        toMainPort.sendPort,
+        history.sourceUrl,
+        history.fileDir,
+        history.fileName,
+        downloadedBytes,
+        totalBytes)
+    );
 
     // deal with communication between download iso and main iso
     toMainPort.listen( (message) {
@@ -112,7 +114,7 @@ class HttpHandler{
 
 
     // listen message from main to download, pause if necessary
-    RandomAccessFile file = await openFile(args.startBytes, args.destPath, args.fileName);
+    RandomAccessFile file = await openFile(args.startBytes, args.destDir, args.fileName);
     toDownloadPort.listen((message){
       if (message == 'pause') {
         args.sendPort.send('pause:$accomplishedBytes');
@@ -120,7 +122,8 @@ class HttpHandler{
       }else if (message == 'cancel'){
         print("receive message cancel...");
         cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
-        deleteFile(args.destPath, args.fileName);
+        print("delete file from download iso, get message of cancel");
+        deleteFile(args.destDir, args.fileName);
       }
     });
 
@@ -142,8 +145,14 @@ class HttpHandler{
       void Function(double val) updateFunc, void Function() finishFunc) async {
     downloadedBytes = 0;
     totalBytes = 0;
-    String fileType = fileName.substring(fileName.lastIndexOf('.'));
-    DownloadHistory history = DownloadHistory(fileType, fileName, sourceUrl, DownloadStatus.downloading);
+    String fileType = fileName.substring(fileName.lastIndexOf('.')+1);
+    final destDir = await getApplicationDocumentsDirectory();
+    DownloadHistory history = DownloadHistory(
+        fileType,
+        fileName,
+        destDir.path,
+        sourceUrl,
+        DownloadStatus.downloading);
     histories.addHistory(history);
     // downloadFile(history, updateFunc, finishFunc);
     if(await downloadFile(history, updateFunc, finishFunc)){
@@ -194,8 +203,7 @@ class HttpHandler{
       _toDownloadPort!.send('cancel');
     }else{
       // no download iso executing, directly delete the file
-      final destDir = await getApplicationDocumentsDirectory();
-      deleteFile(destDir.path, fileName);
+      deleteFile(history.fileDir, fileName);
     }
     history.status = DownloadStatus.cancel;
     histories.changeStatus(history);
@@ -223,13 +231,13 @@ class HttpHandler{
     }
 
     // open a brand new file
-    deleteFile(path, fileName, file: f);
+    await deleteFile(path, fileName, file: f);
     await f.create();
     return f.open(mode: FileMode.write);
     // return f;
   }
 
-  void deleteFile(String path, String fileName, {File? file}) async {
+  Future<void> deleteFile(String path, String fileName, {File? file}) async {
     if (file != null && await file.exists()) {
       await file.delete();
       return;
