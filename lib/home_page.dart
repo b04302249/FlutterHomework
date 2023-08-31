@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'http_handler.dart';
 import 'package:provider/provider.dart';
-import 'download_history.dart';
+import 'download_data.dart';
 import 'side_bar.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -16,7 +16,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   // variable
   double _progress = 0;
   TextEditingController urlController = TextEditingController();
@@ -26,6 +26,13 @@ class _MyHomePageState extends State<MyHomePage> {
   final HttpHandler handler = HttpHandler();
   final TEST_URL1 = 'https://research.nhm.org/pdfs/10840/10840.pdf';
   final TEST_URL2 = "https://miro.medium.com/v2/resize:fit:720/format:webp/1*XEgA1TTwXa5AvAdw40GFow.png";
+  // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
+
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+
+  }
 
   void _updateProgress(double val) {
     setState(() {
@@ -33,21 +40,9 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _updateCurrentProcess(){
-    setState(() {
-      lastSourceUrl = urlController.text;
-      lastFileName = fileNameController.text;
-      // lastSourceUrl = TEST_URL2;
-      // lastFileName = "sample.pdf";
-      // lastFileName = "sample.png";
-    });
-  }
-
-  void _finishCurrentProgress(){
-    setState(() {
-      lastSourceUrl = "";
-      lastFileName = "";
-    });
+  void _updateCurrentProcess(CurrentDownloadTarget target){
+    target.changeFileName("sample.pdf");
+    target.changeSourceUrl(TEST_URL1);
   }
 
 
@@ -57,13 +52,12 @@ class _MyHomePageState extends State<MyHomePage> {
     // by the _incrementCounter method above.
 
     DownloadHistories histories = Provider.of<DownloadHistories>(context);
-
+    CurrentDownloadTarget target = Provider.of<CurrentDownloadTarget>(context);
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.green,
         // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-
         title: Text(widget.title),
       ),
       drawer: const SideBar(),
@@ -87,28 +81,27 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             ElevatedButton(
               onPressed: () {
-                _updateCurrentProcess();
-                handler.newDownload(histories, lastFileName, lastSourceUrl, _updateProgress,
-                    _finishCurrentProgress);
+                _updateCurrentProcess(target);
+                handler.newDownload(histories, target, _updateProgress,);
               },
               child: const Text('Start'),
             ),
             ElevatedButton(
               onPressed: () {
-                handler.pauseDownload(histories, lastFileName);
+                handler.pauseDownload(histories, target.getFileName());
               },
               child: const Text('Pause'),
             ),
             ElevatedButton(
               onPressed: () {
-                handler.resumeDownload(histories, lastFileName, lastSourceUrl, _updateProgress,
-                    _finishCurrentProgress);
+                handler.resumeDownload(histories, target, _updateProgress,);
               },
               child: const Text('Resume'),
             ),
             ElevatedButton(
               onPressed: () {
-                handler.cancelDownload(histories, lastFileName);
+                handler.cancelDownload(histories, target.getFileName());
+                target.reset();
                 _updateProgress(0);
               },
               child: const Text('Cancel'),
@@ -123,4 +116,9 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
+
 }
+
+
+

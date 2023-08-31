@@ -6,7 +6,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:async';
 
-import 'download_history.dart';
+import 'download_data.dart';
 
 
 class DownloadArgs {
@@ -26,18 +26,11 @@ class HttpHandler{
 
   int downloadedBytes = 0;
   int totalBytes = 0;
-
-  // final TEST_URL = 'https://www.africau.edu/images/default/sample.pdf';
-  final TEST_URL = 'https://research.nhm.org/pdfs/10840/10840.pdf';
-  // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
-  // final TEST_URL = 'https://drive.google.com/uc?id=1uQY0Mey2N8Xa_lCI6YFAb1_nFfrcsKpZ&export=download' ;
   SendPort? _toDownloadPort;
 
-  // HttpHandler(this.histories);
 
-
-  Future<bool> downloadFile(DownloadHistory history,
-      void Function(double val) updateFunc, void Function() finishFunc) async {
+  Future<bool> downloadFile(DownloadHistory history, CurrentDownloadTarget target,
+      void Function(double val) updateFunc) async {
     // get the information of totalBytes
     if (totalBytes == 0){
       final response = await http.head(Uri.parse(history.sourceUrl));
@@ -74,7 +67,7 @@ class HttpHandler{
           downloadedBytes = 0;
           totalBytes = 0;
           history.status = DownloadStatus.completed;
-          finishFunc();
+          target.reset();
           toMainPort.close();
           print("Download task completed!!");
         } else if (message.substring(0, 5) == 'pause'){
@@ -120,9 +113,7 @@ class HttpHandler{
         args.sendPort.send('pause:$accomplishedBytes');
         cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
       }else if (message == 'cancel'){
-        print("receive message cancel...");
         cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
-        print("delete file from download iso, get message of cancel");
         deleteFile(args.destDir, args.fileName);
       }
     });
@@ -141,21 +132,21 @@ class HttpHandler{
   }
 
 
-  void newDownload(DownloadHistories histories, String fileName, String sourceUrl,
-      void Function(double val) updateFunc, void Function() finishFunc) async {
+  void newDownload(DownloadHistories histories, CurrentDownloadTarget target,
+      void Function(double val) updateFunc) async {
     downloadedBytes = 0;
     totalBytes = 0;
-    String fileType = fileName.substring(fileName.lastIndexOf('.')+1);
+    String fileType = target.fileName.substring(target.fileName.lastIndexOf('.')+1);
     final destDir = await getApplicationDocumentsDirectory();
     DownloadHistory history = DownloadHistory(
         fileType,
-        fileName,
+        target.fileName,
         destDir.path,
-        sourceUrl,
+        target.sourceUrl,
         DownloadStatus.downloading);
     histories.addHistory(history);
     // downloadFile(history, updateFunc, finishFunc);
-    if(await downloadFile(history, updateFunc, finishFunc)){
+    if(await downloadFile(history, target, updateFunc)){
       histories.changeStatusWithName(history.fileName, DownloadStatus.completed);
     }
   }
@@ -174,16 +165,16 @@ class HttpHandler{
     histories.changeStatus(history);
   }
 
-  void resumeDownload(DownloadHistories histories, String fileName, String sourceUrl,
-      void Function(double val) updateFunc, void Function() finishFunc) async {
-    DownloadHistory? history = histories.getByName(fileName);
+  void resumeDownload(DownloadHistories histories, CurrentDownloadTarget target,
+      void Function(double val) updateFunc) async {
+    DownloadHistory? history = histories.getByName(target.fileName);
     if (history == null){
-      print("FileName: $fileName does not have any record, please press Start to create a new download!");
+      print("FileName: ${target.fileName} does not have any record, please press Start to create a new download!");
       return;
     }
     history.status = DownloadStatus.downloading;
     histories.changeStatus(history);
-    if(await downloadFile(history, updateFunc, finishFunc)){
+    if(await downloadFile(history, target, updateFunc)){
       histories.changeStatusWithName(history.fileName, DownloadStatus.completed);
     }
   }

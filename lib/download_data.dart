@@ -53,3 +53,31 @@ class DownloadHistories extends ChangeNotifier {
   }
 
 }
+
+class CurrentDownloadTarget extends ChangeNotifier{
+  String sourceUrl = "";
+  String fileName = "";
+
+  void changeSourceUrl(String url){
+    this.sourceUrl = url;
+    notifyListeners();
+  }
+
+  void changeFileName(String name){
+    this.fileName = name;
+    notifyListeners();
+  }
+
+  String getSourceUrl(){
+    return this.sourceUrl;
+  }
+
+  String getFileName(){
+    return this.fileName;
+  }
+
+  void reset(){
+    this.sourceUrl = "";
+    this.fileName = "";
+  }
+}

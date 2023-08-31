@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-
-
 class IconHelper {
   static IconData getIconForExtension(String extension) {
     switch (extension) {

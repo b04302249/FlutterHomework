@@ -1,14 +1,17 @@
 
 import 'package:flutter/material.dart';
-import 'package:homework/download_history.dart';
+import 'package:homework/download_data.dart';
 import 'package:provider/provider.dart';
 import 'home_page.dart';
 import 'history_page.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => DownloadHistories(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => DownloadHistories()),
+        ChangeNotifierProvider(create: (context) => CurrentDownloadTarget()),
+      ],
       child: const MyApp(),
     ),
   );
