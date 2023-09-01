@@ -24,22 +24,18 @@ class DownloadArgs {
 
 class HttpHandler{
 
-  int downloadedBytes = 0;
-  int totalBytes = 0;
   SendPort? _toDownloadPort;
 
-
-  Future<bool> downloadFile(DownloadHistory history, CurrentDownloadTarget target,
-      void Function(double val) updateFunc) async {
+  Future<bool> downloadFile(DownloadHistory history, CurrentDownloadTarget target) async {
     // get the information of totalBytes
-    if (totalBytes == 0){
+    if (target.totalBytes == 0){
       final response = await http.head(Uri.parse(history.sourceUrl));
       String contentLen = '';
       if (response.headers['content-length'] != null) {
         contentLen = response.headers['content-length'].toString();
       }
       try{
-        totalBytes = int.parse(contentLen);
+        target.setTotalBytes(int.parse(contentLen));
       } catch(e){
         print("content-length is not a number!!");
       }
@@ -53,8 +49,8 @@ class HttpHandler{
         history.sourceUrl,
         history.fileDir,
         history.fileName,
-        downloadedBytes,
-        totalBytes)
+        target.downloadedBytes,
+        target.totalBytes)
     );
 
     // deal with communication between download iso and main iso
@@ -64,21 +60,18 @@ class HttpHandler{
         _toDownloadPort = message;
       } else if (message is String){
         if (message == 'completed') {
-          downloadedBytes = 0;
-          totalBytes = 0;
           history.status = DownloadStatus.completed;
           target.reset();
           toMainPort.close();
           print("Download task completed!!");
         } else if (message.substring(0, 5) == 'pause'){
           // remember the progress current download, start from current progress next time
-          downloadedBytes = int.parse(message.substring(6));
+          target.setDownloadedBytes(int.parse(message.substring(6)));
           _toDownloadPort = null;
           toMainPort.close();
-          print("pause request from download iso, downloadedBytes: $downloadedBytes");
         }
       } else if (message is double){
-        updateFunc(message);
+        target.setProgress(message);
       }
     });
 
@@ -97,6 +90,7 @@ class HttpHandler{
 
     // arguments
     int accomplishedBytes = args.startBytes;
+    print("accomplishedBytes: $accomplishedBytes");
 
     // download task
     final request = http.Request('Get', Uri.parse(args.downloadUrl));
@@ -132,10 +126,10 @@ class HttpHandler{
   }
 
 
-  void newDownload(DownloadHistories histories, CurrentDownloadTarget target,
-      void Function(double val) updateFunc) async {
-    downloadedBytes = 0;
-    totalBytes = 0;
+  void newDownload(DownloadHistories histories, CurrentDownloadTarget target) async {
+    if (target.totalBytes != 0 || target.downloadedBytes != 0){
+      print("It looks like there already exist a download task! File name: ${target.fileName}");
+    }
     String fileType = target.fileName.substring(target.fileName.lastIndexOf('.')+1);
     final destDir = await getApplicationDocumentsDirectory();
     DownloadHistory history = DownloadHistory(
@@ -146,7 +140,7 @@ class HttpHandler{
         DownloadStatus.downloading);
     histories.addHistory(history); // map, will not duplicate with same name
     // downloadFile(history, updateFunc, finishFunc);
-    if(await downloadFile(history, target, updateFunc)){
+    if(await downloadFile(history, target)){
       histories.changeStatusWithName(history.fileName, DownloadStatus.completed);
     }
   }
@@ -165,8 +159,7 @@ class HttpHandler{
     histories.changeStatus(history);
   }
 
-  void resumeDownload(DownloadHistories histories, CurrentDownloadTarget target,
-      void Function(double val) updateFunc) async {
+  void resumeDownload(DownloadHistories histories, CurrentDownloadTarget target) async {
     DownloadHistory? history = histories.getByName(target.fileName);
     if (history == null){
       print("FileName: ${target.fileName} does not have any record, please press Start to create a new download!");
@@ -174,7 +167,7 @@ class HttpHandler{
     }
     history.status = DownloadStatus.downloading;
     histories.changeStatus(history);
-    if(await downloadFile(history, target, updateFunc)){
+    if(await downloadFile(history, target)){
       histories.changeStatusWithName(history.fileName, DownloadStatus.completed);
     }
   }
@@ -198,8 +191,6 @@ class HttpHandler{
     }
     history.status = DownloadStatus.cancel;
     histories.changeStatus(history);
-    downloadedBytes = 0;
-    totalBytes = 0;
   }
 
   void cleanUp({Isolate? iso, ReceivePort? receivePort, RandomAccessFile? randomAccessFile}){

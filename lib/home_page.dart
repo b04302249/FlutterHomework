@@ -1,5 +1,3 @@
-import 'dart:async';
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'http_handler.dart';
@@ -19,7 +17,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   // variable
-  double _progress = 0;
   TextEditingController urlController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
   final HttpHandler handler = HttpHandler();
@@ -37,7 +34,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
     DownloadHistories histories = Provider.of<DownloadHistories>(context, listen: false);
     CurrentDownloadTarget target = Provider.of<CurrentDownloadTarget>(context, listen: false);
     if (state == AppLifecycleState.paused) {
-      handler.pauseDownload(histories, target.getFileName());
+      handler.pauseDownload(histories, target.fileName);
       print("Sensor screen is close!!");
     }
   }
@@ -58,16 +55,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
     super.dispose();
   }
 
-  void _updateProgress(double val) {
-    setState(() {
-      _progress = val;
-    });
-  }
-
   void _updateCurrentTarget(CurrentDownloadTarget target){
-    int tem = 4;
-    target.changeFileName("sample$tem.jpg");
-    target.changeSourceUrl(TEST_URL4);
+    int tem = 1;
+    target.changeFileName("sample$tem.pdf");
+    target.changeSourceUrl(TEST_URL1);
   }
 
 
@@ -102,33 +93,32 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
             ElevatedButton(
               onPressed: () {
                 _updateCurrentTarget(target);
-                handler.newDownload(histories, target, _updateProgress,);
+                handler.newDownload(histories, target,);
               },
               child: const Text('Start'),
             ),
             ElevatedButton(
               onPressed: () {
-                handler.pauseDownload(histories, target.getFileName());
+                handler.pauseDownload(histories, target.fileName);
               },
               child: const Text('Pause'),
             ),
             ElevatedButton(
               onPressed: () {
-                handler.resumeDownload(histories, target, _updateProgress,);
+                handler.resumeDownload(histories, target,);
               },
               child: const Text('Resume'),
             ),
             ElevatedButton(
               onPressed: () {
-                handler.cancelDownload(histories, target.getFileName());
+                handler.cancelDownload(histories, target.fileName);
                 target.reset();
-                _updateProgress(0);
               },
               child: const Text('Cancel'),
             ),
             LinearProgressIndicator(
               // value between 0~1
-              value: _progress,
+              value: target.progress,
               color: Colors.blue,
             ),
           ],

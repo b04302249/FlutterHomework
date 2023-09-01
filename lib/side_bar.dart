@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:homework/history_page.dart';
-import 'package:homework/home_page.dart';
 
 
 class SideBar extends StatelessWidget {

@@ -63,7 +63,6 @@ class _HistoryPageState extends State<HistoryPage> {
     if (history == null){
       return const Icon(Icons.insert_drive_file, size: 80, color: Colors.yellow,);
     }
-    print("name: ${history.fileName}, type: ${history.fileType}");
     switch (history.fileType) {
       case 'png':
       case 'jpg':

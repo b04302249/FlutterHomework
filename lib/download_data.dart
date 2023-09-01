@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:core';
 
 import 'package:flutter/cupertino.dart';
 
@@ -57,6 +58,10 @@ class DownloadHistories extends ChangeNotifier {
 class CurrentDownloadTarget extends ChangeNotifier{
   String sourceUrl = "";
   String fileName = "";
+  // downloadedBytes will only update when task pause or complete
+  int downloadedBytes = 0;
+  int totalBytes = 0;
+  double progress = 0;
 
   void changeSourceUrl(String url){
     this.sourceUrl = url;
@@ -68,16 +73,26 @@ class CurrentDownloadTarget extends ChangeNotifier{
     notifyListeners();
   }
 
-  String getSourceUrl(){
-    return this.sourceUrl;
+  void setDownloadedBytes(int val){
+    this.downloadedBytes = val;
+    notifyListeners();
   }
 
-  String getFileName(){
-    return this.fileName;
+  void setTotalBytes(int val){
+    this.totalBytes = val;
+    notifyListeners();
+  }
+
+  void setProgress(double val){
+    this.progress = val;
+    notifyListeners();
   }
 
   void reset(){
     this.sourceUrl = "";
     this.fileName = "";
+    this.downloadedBytes = 0;
+    this.totalBytes = 0;
+    this.progress = 0;
   }
 }
