@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:homework/download_data.dart';
+import 'package:homework/picture_page.dart';
 import 'package:provider/provider.dart';
 import 'home_page.dart';
 import 'history_page.dart';
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
       routes: {
         // "/": (context) => MyHomePage(title: "Http downloader"),
         "/history": (context) => const HistoryPage(),
+        "/picture": (context) => const PicturePage(),
       },
       title: 'Flutter Demo',
       theme: ThemeData(

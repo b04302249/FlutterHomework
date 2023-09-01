@@ -144,7 +144,7 @@ class HttpHandler{
         destDir.path,
         target.sourceUrl,
         DownloadStatus.downloading);
-    histories.addHistory(history);
+    histories.addHistory(history); // map, will not duplicate with same name
     // downloadFile(history, updateFunc, finishFunc);
     if(await downloadFile(history, target, updateFunc)){
       histories.changeStatusWithName(history.fileName, DownloadStatus.completed);

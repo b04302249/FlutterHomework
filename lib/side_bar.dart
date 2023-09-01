@@ -26,15 +26,6 @@ class SideBar extends StatelessWidget {
             title: const Text('Home'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
-              // Implement navigation to the Home screen here
-              // Navigator.popUntil(context, ModalRoute.withName("/"));
-              // ModalRoute<dynamic>? top = ModalRoute.of(context);
-              // if (top != null &&
-              //     !(top is MaterialPageRoute && top.settings.name == "/")) {
-              //   Navigator.pushNamed(context, "/");
-              //
-              //   // Navigator.pushReplacementNamed(context, "/");
-              // }
               Navigator.restorablePopAndPushNamed(context, "/");
             },
           ),
@@ -43,20 +34,9 @@ class SideBar extends StatelessWidget {
             title: const Text('History'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
-              // Implement navigation to the Settings screen here
-              // Navigator.popUntil(context, ModalRoute.withName("/history"));
-              // ModalRoute<dynamic>? top = ModalRoute.of(context);
-              // if (top != null &&
-              //     !(top is MaterialPageRoute &&
-              //         top.settings.name == "/history")) {
-              //   Navigator.pushNamed(context, "/history");
-              //   // Navigator.pushReplacementNamed(context, "/history");
-              // }
-              // Navigator.pop(context);
               Navigator.restorablePopAndPushNamed(context, "/history");
             },
           ),
-          // Add more ListTiles for other sidebar options
         ],
       ),
     );

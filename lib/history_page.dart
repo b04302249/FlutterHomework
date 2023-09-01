@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'download_data.dart';
-import 'icon_helper.dart';
 import 'side_bar.dart';
 import 'dart:io';
 
@@ -32,24 +30,29 @@ class _HistoryPageState extends State<HistoryPage> {
           mainAxisSpacing: 8, // Spacing between rows
         ),
         itemCount: histories.length(),
+
         itemBuilder: (context, index) {
-          print("histories length: ${histories.length()}");
-          return GridTile(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                generateGrid(histories.getByIndex(index)),
-                const SizedBox(height: 8), // Add spacing between icon and text
-                Text(
-                  histories.getByIndex(index)!.fileName, // Replace with the text you want to show
-                  style: const TextStyle(fontSize: 16),
+          return GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, "/picture");
+              },
+              child: GridTile(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    generateGrid(histories.getByIndex(index)),
+                    const SizedBox(height: 8), // Add spacing between icon and text
+                    Text(
+                      histories.getByIndex(index)!.fileName,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    Text(
+                      "(${histories.getByIndex(index)!.status.name})",
+                      style: const TextStyle(fontSize: 8),
+                    ),
+                  ],
                 ),
-                Text(
-                  "(${histories.getByIndex(index)!.status.name})", // Replace with the text you want to show
-                  style: const TextStyle(fontSize: 8),
-                ),
-              ],
-            ),
+              )
           );
         },
       ),

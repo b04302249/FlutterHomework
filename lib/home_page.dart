@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'http_handler.dart';
@@ -21,13 +22,15 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   double _progress = 0;
   TextEditingController urlController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
-  String lastSourceUrl = '';
-  String lastFileName = '';
   final HttpHandler handler = HttpHandler();
+  // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
   final TEST_URL1 = 'https://research.nhm.org/pdfs/10840/10840.pdf';
   final TEST_URL2 = "https://miro.medium.com/v2/resize:fit:720/format:webp/1*XEgA1TTwXa5AvAdw40GFow.png";
-  // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
+  final TEST_URL3 = 'https://i.imgur.com/hw41l0p.jpg';
+  final TEST_URL4 = 'https://img.4gamers.com.tw/news-image/9ac84565-1cb1-4c5b-a69b-ede4ae932e00.jpg';
+  final TEST_URL5 = 'https://pbs.twimg.com/media/EcypQCEU8AAgGgk.jpg';
 
+  final List<String> testUrls = [];
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -42,12 +45,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance?.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+    // testUrls.add(TEST_URL2);
+    testUrls.add(TEST_URL3);
+    testUrls.add(TEST_URL4);
+    testUrls.add(TEST_URL5);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance?.removeObserver(this);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -57,9 +64,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
     });
   }
 
-  void _updateCurrentProcess(CurrentDownloadTarget target){
-    target.changeFileName("sample.pdf");
-    target.changeSourceUrl(TEST_URL1);
+  void _updateCurrentTarget(CurrentDownloadTarget target){
+    int tem = 4;
+    target.changeFileName("sample$tem.jpg");
+    target.changeSourceUrl(TEST_URL4);
   }
 
 
@@ -79,13 +87,8 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
       ),
       drawer: const SideBar(),
       body: Container(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         margin: const EdgeInsets.all(20),
         child: Column(
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             TextField(
@@ -98,7 +101,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
             ),
             ElevatedButton(
               onPressed: () {
-                _updateCurrentProcess(target);
+                _updateCurrentTarget(target);
                 handler.newDownload(histories, target, _updateProgress,);
               },
               child: const Text('Start'),
