@@ -21,13 +21,13 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   TextEditingController fileNameController = TextEditingController();
   final HttpHandler handler = HttpHandler();
   // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
+  // final TEST_URL = "https://drive.google.com/uc?id=1I5g-YSzmgo_gmYnyomLLDtlcN1MBrT0R&export=download";
   final TEST_URL1 = 'https://research.nhm.org/pdfs/10840/10840.pdf';
   final TEST_URL2 = "https://miro.medium.com/v2/resize:fit:720/format:webp/1*XEgA1TTwXa5AvAdw40GFow.png";
   final TEST_URL3 = 'https://i.imgur.com/hw41l0p.jpg';
   final TEST_URL4 = 'https://img.4gamers.com.tw/news-image/9ac84565-1cb1-4c5b-a69b-ede4ae932e00.jpg';
   final TEST_URL5 = 'https://pbs.twimg.com/media/EcypQCEU8AAgGgk.jpg';
 
-  final List<String> testUrls = [];
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -43,10 +43,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // testUrls.add(TEST_URL2);
-    testUrls.add(TEST_URL3);
-    testUrls.add(TEST_URL4);
-    testUrls.add(TEST_URL5);
   }
 
   @override
@@ -56,9 +52,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   }
 
   void _updateCurrentTarget(CurrentDownloadTarget target){
-    int tem = 1;
-    target.changeFileName("sample$tem.pdf");
-    target.changeSourceUrl(TEST_URL1);
+    // target.changeFileName("sample1.jpg");
+    // target.changeSourceUrl(TEST_URL3);
+    target.changeFileName(fileNameController.text);
+    target.changeSourceUrl(urlController.text);
   }
 
 
@@ -69,6 +66,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
 
     DownloadHistories histories = Provider.of<DownloadHistories>(context);
     CurrentDownloadTarget target = Provider.of<CurrentDownloadTarget>(context);
+
+    // set up initial value
+    if (target.fileName != ""){
+      fileNameController.text = target.fileName;
+    }
+    if (target.sourceUrl != ""){
+      urlController.text = target.sourceUrl;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -92,8 +97,14 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
             ),
             ElevatedButton(
               onPressed: () {
+                if (target.totalBytes != 0 || target.downloadedBytes != 0){
+                  print("It looks like there already exist a download task! "
+                      "File name: ${target.fileName}");
+                  return;
+                }
                 _updateCurrentTarget(target);
-                handler.newDownload(histories, target,);
+                if (target.fileName != "" && target.sourceUrl != "")
+                  handler.newDownload(histories, target,);
               },
               child: const Text('Start'),
             ),
@@ -112,6 +123,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
             ElevatedButton(
               onPressed: () {
                 handler.cancelDownload(histories, target.fileName);
+                print("success cancel!");
                 target.reset();
               },
               child: const Text('Cancel'),

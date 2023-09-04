@@ -26,13 +26,44 @@ class _PicturePageState extends State<PicturePage> {
         itemCount: histories.length(),
         itemBuilder: (context, index) {
           return Center(
-            child: Image.file(
-              File('${histories.getByIndex(index)?.fileDir}/${histories.getByIndex(index)?.fileName}'),
-              fit: BoxFit.cover,
-            ),
+            child: generatePageItem(histories.getByIndex(index)),
           );
         },
       ),
     );
+  }
+
+
+  @override
+  void dispose() {
+    super.dispose();
+    ImageCache cache = PaintingBinding.instance!.imageCache;
+    cache.clear();
+  }
+
+  Widget generatePageItem(DownloadHistory? history) {
+    if (history == null){
+      return const Icon(Icons.insert_drive_file, size: 80, color: Colors.yellow,);
+    }
+    switch (history.fileType) {
+      case 'png':
+      case 'jpg':
+      case 'jpeg':
+      case 'gif':
+        if (history.status != DownloadStatus.completed){
+          return Icon(Icons.image, size: 80, color: Colors.yellow,);
+        }
+        File file = File('${history.fileDir}/${history.fileName}');
+        return Image.file(file, fit: BoxFit.cover,);
+      case 'pdf':
+        return const Icon(Icons.picture_as_pdf, size: 80, color: Colors.yellow,);
+      case 'doc':
+      case 'docx':
+        return const Icon(Icons.description, size: 80, color: Colors.yellow,);
+      case 'txt':
+        return const Icon(Icons.text_fields, size: 80, color: Colors.yellow,);
+      default:
+        return const Icon(Icons.insert_drive_file, size: 80, color: Colors.yellow,);
+    }
   }
 }

@@ -15,9 +15,15 @@ class _HistoryPageState extends State<HistoryPage> {
 
 
   @override
+  void dispose() {
+    super.dispose();
+    ImageCache cache = PaintingBinding.instance.imageCache;
+    cache.clear();
+  }
+
+  @override
   Widget build(BuildContext context) {
     DownloadHistories histories = Provider.of<DownloadHistories>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('GridView Example'),
@@ -68,6 +74,9 @@ class _HistoryPageState extends State<HistoryPage> {
       case 'jpg':
       case 'jpeg':
       case 'gif':
+        if (history.status != DownloadStatus.completed){
+          return Icon(Icons.image, size: 80, color: Colors.yellow,);
+        }
         File file = File('${history.fileDir}/${history.fileName}');
         return SizedBox(width: 80, height: 80, child: Image.file(file, fit: BoxFit.fitHeight,),);
       case 'pdf':

@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:async';
+import 'dart:convert';
 
 import 'download_data.dart';
 
@@ -26,6 +27,32 @@ class HttpHandler{
 
   SendPort? _toDownloadPort;
 
+  bool checkStatus(int statusCode){
+    switch(statusCode){
+      case 100:
+      case 101:
+      case 102:
+      case 200:
+      case 201:
+      case 202:
+      case 204:
+      case 206:
+      case 207:
+      case 208:
+      case 226:
+      case 300:
+      case 301:
+      case 302:
+      case 303:
+      case 304:
+      case 307:
+      case 308:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   Future<bool> downloadFile(DownloadHistory history, CurrentDownloadTarget target) async {
     // get the information of totalBytes
     if (target.totalBytes == 0){
@@ -33,6 +60,12 @@ class HttpHandler{
       String contentLen = '';
       if (response.headers['content-length'] != null) {
         contentLen = response.headers['content-length'].toString();
+      }
+      if (!checkStatus(response.statusCode)){
+        final errorResponse = jsonDecode(response.body);
+        print(errorResponse['error']);
+        print(errorResponse['message']);
+        return false;
       }
       try{
         target.setTotalBytes(int.parse(contentLen));
@@ -108,7 +141,6 @@ class HttpHandler{
         cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
       }else if (message == 'cancel'){
         cleanUp(iso: Isolate.current, receivePort: toDownloadPort, randomAccessFile: file);
-        deleteFile(args.destDir, args.fileName);
       }
     });
 
@@ -127,9 +159,6 @@ class HttpHandler{
 
 
   void newDownload(DownloadHistories histories, CurrentDownloadTarget target) async {
-    if (target.totalBytes != 0 || target.downloadedBytes != 0){
-      print("It looks like there already exist a download task! File name: ${target.fileName}");
-    }
     String fileType = target.fileName.substring(target.fileName.lastIndexOf('.')+1);
     final destDir = await getApplicationDocumentsDirectory();
     DownloadHistory history = DownloadHistory(
@@ -165,6 +194,10 @@ class HttpHandler{
       print("FileName: ${target.fileName} does not have any record, please press Start to create a new download!");
       return;
     }
+    if (history.status == DownloadStatus.downloading){
+      print("FileName: ${target.fileName} is downloading, please wait!");
+      return;
+    }
     history.status = DownloadStatus.downloading;
     histories.changeStatus(history);
     if(await downloadFile(history, target)){
@@ -185,10 +218,8 @@ class HttpHandler{
     if (_toDownloadPort != null){
       // download iso executing, ask download iso to clean up
       _toDownloadPort!.send('cancel');
-    }else{
-      // no download iso executing, directly delete the file
-      deleteFile(history.fileDir, fileName);
     }
+    deleteFile(history.fileDir, fileName);
     history.status = DownloadStatus.cancel;
     histories.changeStatus(history);
   }

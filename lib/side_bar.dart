@@ -6,6 +6,7 @@ class SideBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -24,7 +25,13 @@ class SideBar extends StatelessWidget {
             title: const Text('Home'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
-              Navigator.restorablePopAndPushNamed(context, "/");
+              // Navigator.restorablePopAndPushNamed(context, "/");
+              Navigator.popUntil(context, ModalRoute.withName("/"));
+              ModalRoute<dynamic>? top = ModalRoute.of(context);
+              if (top != null &&
+                  !(top is MaterialPageRoute && top.settings.name == "/")) {
+                Navigator.pushNamed(context, "/");
+              }
             },
           ),
           ListTile(
@@ -32,7 +39,14 @@ class SideBar extends StatelessWidget {
             title: const Text('History'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
-              Navigator.restorablePopAndPushNamed(context, "/history");
+              // Navigator.restorablePopAndPushNamed(context, "/history");
+              Navigator.popUntil(context, ModalRoute.withName("/history"));
+              ModalRoute<dynamic>? top = ModalRoute.of(context);
+              if (top != null &&
+                  !(top is MaterialPageRoute &&
+                      top.settings.name == "/history")) {
+                Navigator.pushNamed(context, "/history");
+              }
             },
           ),
         ],
