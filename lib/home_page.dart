@@ -20,8 +20,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   TextEditingController urlController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
   final HttpHandler handler = HttpHandler();
-  // final TEST_URL = 'https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-100mb-pdf-file&ext=pdf';
-  // final TEST_URL = "https://drive.google.com/uc?id=1I5g-YSzmgo_gmYnyomLLDtlcN1MBrT0R&export=download";
   final TEST_URL1 = 'https://research.nhm.org/pdfs/10840/10840.pdf';
   final TEST_URL2 = "https://miro.medium.com/v2/resize:fit:720/format:webp/1*XEgA1TTwXa5AvAdw40GFow.png";
   final TEST_URL3 = 'https://i.imgur.com/hw41l0p.jpg';
@@ -52,10 +50,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   }
 
   void _updateCurrentTarget(CurrentDownloadTarget target){
-    // target.changeFileName("sample1.jpg");
-    // target.changeSourceUrl(TEST_URL3);
-    target.changeFileName(fileNameController.text);
-    target.changeSourceUrl(urlController.text);
+    target.changeFileName("sample3.jpg");
+    target.changeSourceUrl(TEST_URL5);
+    // target.changeFileName(fileNameController.text);
+    // target.changeSourceUrl(urlController.text);
   }
 
 

@@ -13,24 +13,57 @@ class PicturePage extends StatefulWidget {
 }
 
 class _PicturePageState extends State<PicturePage> {
+  bool isScaling = false;
+
+  void setScale(bool state){
+    setState(() {
+      isScaling = state;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     DownloadHistories histories = Provider.of<DownloadHistories>(context);
+    TransformationController transform = TransformationController();
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Image Viewer'),
       ),
-      body: PageView.builder(
-        itemCount: histories.length(),
-        itemBuilder: (context, index) {
-          return Center(
-            child: generatePageItem(histories.getByIndex(index)),
-          );
-        },
+      body: InteractiveViewer(
+        transformationController: transform,
+        boundaryMargin: EdgeInsets.all(double.infinity),
+        child: PageView.builder(
+          itemCount: histories.length(),
+          physics: isScaling ? NeverScrollableScrollPhysics():PageScrollPhysics(),
+          itemBuilder: (context, index) {
+            return Center(
+              child: GestureDetector(
+                onDoubleTapDown: (details) => handleDoubleTap(details, transform),
+                onScaleStart: (_) {
+                  setScale(true);
+                },
+                onScaleEnd: (_) {
+                  setScale(false);
+                },
+                child: generatePageItem(histories.getByIndex(index)),
+              ),
+            );
+          },
+        ),
       ),
     );
+  }
+
+  void handleDoubleTap(TapDownDetails details, TransformationController transform){
+    if (transform.value != Matrix4.identity()){
+      transform.value = Matrix4.identity();
+    }else{
+      final position = details.localPosition;
+      transform.value = Matrix4.identity()
+        ..translate((-position.dx) * 1.5, (-position.dy) * 4)
+        ..scale(2.0);
+    }
   }
 
 
