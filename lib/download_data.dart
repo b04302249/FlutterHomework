@@ -34,6 +34,7 @@ class DownloadHistories extends ChangeNotifier {
 
   void changeStatusWithName(String name, DownloadStatus status){
     histories[name]!.status = status;
+    notifyListeners();
   }
 
   void changeStatus(DownloadHistory history){

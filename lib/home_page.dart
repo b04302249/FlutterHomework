@@ -35,6 +35,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
       handler.pauseDownload(histories, target.fileName);
       print("Sensor screen is close!!");
     }
+    else if (state == AppLifecycleState.resumed){
+      handler.resumeDownload(histories, target);
+      print("Sensor screen is resumed");
+    }
   }
 
   @override
@@ -50,10 +54,10 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver{
   }
 
   void _updateCurrentTarget(CurrentDownloadTarget target){
-    target.changeFileName("sample3.jpg");
-    target.changeSourceUrl(TEST_URL5);
-    // target.changeFileName(fileNameController.text);
-    // target.changeSourceUrl(urlController.text);
+    // target.changeFileName("sample2.jpg");
+    // target.changeSourceUrl(TEST_URL4);
+    target.changeFileName(fileNameController.text);
+    target.changeSourceUrl(urlController.text);
   }
 
 
